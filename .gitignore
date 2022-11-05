@@ -1,0 +1,5 @@
+# customized credentials
+WiFi-credentials.h
+# build artifacts
+.pio
+.vscode
