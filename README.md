@@ -16,6 +16,11 @@ that file to grant access to your LAN.
 3. After the installation is complete and the reload is completed, there will be a small house icon in the lower left corner. Click to display the Platformio IDE home page
 4. Go to file - > Open folder - > Select the **Remote-Relays** folder. Click the (√) symbol in the lower left corner to compile (→) for upload.
 
+## LED Status
+
+- **Fast Blinking** attempting to connect to WiFi specified in `WiFi-credentials.h`
+- **Heartbeat** connected
+
 ## License
 
 This project is derived from a LilyGo T-Relay example which is MIT Licensed,
