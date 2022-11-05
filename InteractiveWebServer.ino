@@ -23,6 +23,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define RELAY_PIN_4 5
 #define LED_PIN     25
 
+#define BLINK_FAST          0
+#define BLINK_HEARTBEAT     1
+#define BLINK_PATTERN_LEN   4
+
+#define WIFI_CHECK_INTERVAL 3000
 
 #include <Arduino.h>
 /* ESP32 Dependencies */
@@ -30,8 +35,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <ESPDash.h>
-
+/* Your WiFi Credentials */
 #include "WiFi-credentials.h"
+
+unsigned long now = 0;
+unsigned long timestamp = 0;
+unsigned long wifiTime = 0;
+
+int blinkPattern = BLINK_FAST;
+int blinkCycle = 0;
+int wifiStatus = WL_IDLE_STATUS;
+unsigned long blinks[2][4] = {
+    {101, 100, 101, 100},   /* odd -> LED on phase */
+    { 75, 150,  75, 700}
+};
 
 /* Start Webserver */
 AsyncWebServer server(80);
@@ -52,8 +69,7 @@ void setup()
 {
     Serial.begin(115200);
 
-
-    // Onboard LED light, it can be used freely
+    // Onboard LED
     pinMode(RELAY_PIN_1, OUTPUT);
     pinMode(RELAY_PIN_2, OUTPUT);
     pinMode(RELAY_PIN_3, OUTPUT);
@@ -67,17 +83,24 @@ void setup()
     digitalWrite(RELAY_PIN_4, LOW);
     digitalWrite(LED_PIN, LOW);
 
-
-
     /* Connect WiFi */
+    Serial.print("Connecting to: ");
+    Serial.println(ssid);
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
-    if (WiFi.waitForConnectResult() != WL_CONNECTED) {
-        Serial.printf("WiFi Failed!\n");
-        return;
+    timestamp = millis();
+    while (WiFi.status() != WL_CONNECTED) {
+        if (millis() - timestamp > blinks[blinkPattern][blinkCycle]) {
+            digitalWrite(LED_PIN, ((blinks[blinkPattern][blinkCycle] & 1) == 1));
+            timestamp = millis();
+            blinkCycle = (blinkCycle + 1) % BLINK_PATTERN_LEN;
+        }
     }
+    digitalWrite(LED_PIN, HIGH);
     Serial.print("IP Address: ");
     Serial.println(WiFi.localIP());
+    Serial.print("RSSI: ");
+    Serial.println(WiFi.RSSI());
 
     /* Attach Relay_1 Callback */
     Relay_1.attachCallback([&](bool value) {
@@ -125,5 +148,27 @@ void setup()
 
 void loop()
 {
-    /* Nothing so far */
+    now = millis();
+    wifiStatus = WiFi.status();
+
+    if ((wifiStatus != WL_CONNECTED) && (now-wifiTime > WIFI_CHECK_INTERVAL)) {
+        Serial.println("Reconnecting to WiFi...");
+        WiFi.disconnect();
+        WiFi.reconnect();
+        wifiTime = now;
+        timestamp = now;
+        blinkPattern = BLINK_FAST;
+        blinkCycle = 0;
+    } else if ((wifiStatus == WL_CONNECTED) && (blinkPattern == BLINK_FAST)) {
+        timestamp = now;
+        blinkPattern = BLINK_HEARTBEAT;
+        blinkCycle = 0;
+    }
+
+    /* show LED heartbeat */
+    if (now - timestamp > blinks[blinkPattern][blinkCycle]) {
+        digitalWrite(LED_PIN, ((blinks[blinkPattern][blinkCycle] & 1) == 1));
+        timestamp = now;
+        blinkCycle = (blinkCycle + 1) % BLINK_PATTERN_LEN;
+    }
 }
