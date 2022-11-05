@@ -21,7 +21,11 @@ that file to grant access to your LAN.
 - **Fast Blinking** attempting to connect to WiFi specified in `WiFi-credentials.h`
 - **Heartbeat** connected
 
+## Web Interface
+
+The websocket interface uses either ws: or wss: depending on the http:/https: protocol used for the web page, allowing installation behind a reverse proxy with SSL.
+
 ## License
 
 This project is derived from a LilyGo T-Relay example which is MIT Licensed,
-but it embeded a copy of the GPLv3-licened [ESP-DASH](https://github.com/ayushsharma82/ESP-DASH), so I suspect the original licensing was an oversight and the entirety *must* be GPLv3 licensed.
+but it embeded a copy of the GPLv3-licensed [ESP-DASH](https://github.com/ayushsharma82/ESP-DASH), so I suspect the original licensing was an oversight and the entirety *must* be GPLv3 licensed.
