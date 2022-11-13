@@ -16,6 +16,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+Original example: Copyright 2022 Xinyuan-LilyGO
 */
 #define RELAY_PIN_1 21
 #define RELAY_PIN_2 19
@@ -50,6 +51,14 @@ unsigned long blinks[2][4] = {
     { 75, 150,  75, 700}
 };
 
+unsigned long ontime[4] = {     /* momentary relay on time in millis*/
+    0, 0, 0, 400
+};
+
+unsigned long offtime[4] = {    /* when to turn off momentary switch*/
+    0, 0, 0, 0
+};
+
 /* Start Webserver */
 AsyncWebServer server(80);
 
@@ -63,7 +72,7 @@ ESPDash dashboard(&server);
 Card Relay_1(&dashboard, BUTTON_CARD, "Relay_1");
 Card Relay_2(&dashboard, BUTTON_CARD, "Relay_2");
 Card Relay_3(&dashboard, BUTTON_CARD, "Relay_3");
-Card Relay_4(&dashboard, BUTTON_CARD, "Relay_4");
+Card Relay_4(&dashboard, BUTTON_CARD, "Relay_4_momentary");
 
 void setup()
 {
@@ -110,6 +119,10 @@ void setup()
         /* Make sure we update our button's value and send update to dashboard */
         Relay_1.update(value);
         dashboard.sendUpdates();
+        /* if momentary switch turning on, start timer */
+        if (value && (ontime[0] > 0)) {
+            offtime[0] = millis() + ontime[0];
+        }
     });
 
     /* Attach Relay_2 Callback */
@@ -120,6 +133,10 @@ void setup()
         /* Make sure we update our button's value and send update to dashboard */
         Relay_2.update(value);
         dashboard.sendUpdates();
+        /* if momentary switch turning on, start timer */
+        if (value && (ontime[1] > 0)) {
+            offtime[1] = millis() + ontime[1];
+        }
     });
 
     /* Attach Button Callback */
@@ -130,6 +147,10 @@ void setup()
         /* Make sure we update our button's value and send update to dashboard */
         Relay_3.update(value);
         dashboard.sendUpdates();
+        /* if momentary switch turning on, start timer */
+        if (value && (ontime[2] > 0)) {
+            offtime[2] = millis() + ontime[2];
+        }
     });
 
     /* Attach Button Callback */
@@ -140,6 +161,10 @@ void setup()
         /* Make sure we update our button's value and send update to dashboard */
         Relay_4.update(value);
         dashboard.sendUpdates();
+        /* if momentary switch turning on, start timer */
+        if (value && (ontime[3] > 0)) {
+            offtime[3] = millis() + ontime[3];
+        }
     });
 
     /* Start AsyncWebServer */
@@ -148,8 +173,40 @@ void setup()
 
 void loop()
 {
+    int i = 0;
+    bool needUpdate = false;
+
     now = millis();
     wifiStatus = WiFi.status();
+
+    /* turn off momentary switches */
+    for (i=0; i<4; i++) {
+        if ((offtime[i] > 0) && (now > offtime[i])) {
+            offtime[i] = 0;
+            needUpdate = true;
+            switch (i) {
+                case 0:
+                    digitalWrite(RELAY_PIN_1, false);
+                    Relay_1.update(false);
+                    break;
+                case 1:
+                    digitalWrite(RELAY_PIN_2, false);
+                    Relay_2.update(false);
+                    break;
+                case 2:
+                    digitalWrite(RELAY_PIN_3, false);
+                    Relay_3.update(false);
+                    break;
+                case 3:
+                    digitalWrite(RELAY_PIN_4, false);
+                    Relay_4.update(false);
+                    break;
+            }
+            if (needUpdate) {
+                dashboard.sendUpdates();
+            }
+        }
+    }
 
     if ((wifiStatus != WL_CONNECTED) && (now-wifiTime > WIFI_CHECK_INTERVAL)) {
         Serial.println("Reconnecting to WiFi...");
