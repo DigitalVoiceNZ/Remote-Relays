@@ -18,11 +18,24 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 Original example: Copyright 2022 Xinyuan-LilyGO
 */
-#define RELAY_PIN_1 21
-#define RELAY_PIN_2 19
-#define RELAY_PIN_3 18
-#define RELAY_PIN_4 5
+#if defined(RELAY8)
+    #define RELAY_PIN_1 33
+    #define RELAY_PIN_2 32
+    #define RELAY_PIN_3 13
+    #define RELAY_PIN_4 12
+    #define RELAY_PIN_5 21
+    #define RELAY_PIN_6 19
+    #define RELAY_PIN_7 18
+    #define RELAY_PIN_8 5
+#else
+    #define RELAY_PIN_1 21
+    #define RELAY_PIN_2 19
+    #define RELAY_PIN_3 18
+    #define RELAY_PIN_4 5
+#endif
+
 #define LED_PIN     25
+
 
 #define BLINK_FAST          0
 #define BLINK_HEARTBEAT     1
@@ -51,13 +64,27 @@ unsigned long blinks[2][4] = {
     { 75, 150,  75, 700}
 };
 
-unsigned long ontime[4] = {     /* momentary relay on time in millis*/
-    0, 0, 0, 400
-};
+#if defined(RELAY8)
+    #define NUMBER_OF_RELAYS 8
 
-unsigned long offtime[4] = {    /* when to turn off momentary switch*/
-    0, 0, 0, 0
-};
+    unsigned long ontime[8] = {     /* momentary relay on time in millis*/
+        0, 0, 0, 400, 0, 0, 0, 800
+    };
+
+    unsigned long offtime[8] = {    /* when to turn off momentary switch*/
+        0, 0, 0, 0, 0, 0, 0, 0
+    };
+#else
+    #define NUMBER_OF_RELAYS 4
+    unsigned long ontime[4] = {     /* momentary relay on time in millis*/
+        0, 0, 0, 400
+    };
+
+    unsigned long offtime[4] = {    /* when to turn off momentary switch*/
+        0, 0, 0, 0
+    };
+#endif
+
 
 /* Start Webserver */
 AsyncWebServer server(80);
@@ -74,6 +101,13 @@ Card Relay_2(&dashboard, BUTTON_CARD, "Relay_2");
 Card Relay_3(&dashboard, BUTTON_CARD, "Relay_3");
 Card Relay_4(&dashboard, BUTTON_CARD, "Relay_4_momentary");
 
+#if defined(RELAY8)
+Card Relay_5(&dashboard, BUTTON_CARD, "Relay_5");
+Card Relay_6(&dashboard, BUTTON_CARD, "Relay_6");
+Card Relay_7(&dashboard, BUTTON_CARD, "Relay_7");
+Card Relay_8(&dashboard, BUTTON_CARD, "Relay_8_momentary");
+#endif
+
 void setup()
 {
     Serial.begin(115200);
@@ -83,6 +117,13 @@ void setup()
     pinMode(RELAY_PIN_2, OUTPUT);
     pinMode(RELAY_PIN_3, OUTPUT);
     pinMode(RELAY_PIN_4, OUTPUT);
+    
+#if defined(RELAY8)
+    pinMode(RELAY_PIN_5, OUTPUT);
+    pinMode(RELAY_PIN_6, OUTPUT);
+    pinMode(RELAY_PIN_7, OUTPUT);
+    pinMode(RELAY_PIN_8, OUTPUT);
+#endif
     pinMode(LED_PIN, OUTPUT);
     delay(100);
 
@@ -90,7 +131,14 @@ void setup()
     digitalWrite(RELAY_PIN_2, LOW);
     digitalWrite(RELAY_PIN_3, LOW);
     digitalWrite(RELAY_PIN_4, LOW);
+    
+#if defined(RELAY8)
+    digitalWrite(RELAY_PIN_5, LOW);
+    digitalWrite(RELAY_PIN_6, LOW);
+    digitalWrite(RELAY_PIN_7, LOW);
+    digitalWrite(RELAY_PIN_8, LOW);
     digitalWrite(LED_PIN, LOW);
+#endif
 
     /* Connect WiFi */
     Serial.print("Connecting to: ");
@@ -166,6 +214,65 @@ void setup()
             offtime[3] = millis() + ontime[3];
         }
     });
+    
+#if defined(RELAY8)
+    /* Attach Relay_5 Callback */
+    Relay_5.attachCallback([&](bool value) {
+        /* Print our new button value received from dashboard */
+        Serial.println("Relay_5 Triggered: " + String((value) ? "true" : "false"));
+        digitalWrite(RELAY_PIN_5, value);
+        /* Make sure we update our button's value and send update to dashboard */
+        Relay_5.update(value);
+        dashboard.sendUpdates();
+        /* if momentary switch turning on, start timer */
+        if (value && (ontime[4] > 0)) {
+            offtime[4] = millis() + ontime[4];
+        }
+    });
+
+    /* Attach Relay_6 Callback */
+    Relay_6.attachCallback([&](bool value) {
+        /* Print our new button value received from dashboard */
+        Serial.println("Relay_6 Triggered: " + String((value) ? "true" : "false"));
+        digitalWrite(RELAY_PIN_6, value);
+        /* Make sure we update our button's value and send update to dashboard */
+        Relay_6.update(value);
+        dashboard.sendUpdates();
+        /* if momentary switch turning on, start timer */
+        if (value && (ontime[5] > 0)) {
+            offtime[5] = millis() + ontime[5];
+        }
+    });
+
+    /* Attach Button Callback */
+    Relay_7.attachCallback([&](bool value) {
+        /* Print our new button value received from dashboard */
+        Serial.println("Relay_7 Triggered: " + String((value) ? "true" : "false"));
+        digitalWrite(RELAY_PIN_7, value);
+        /* Make sure we update our button's value and send update to dashboard */
+        Relay_7.update(value);
+        dashboard.sendUpdates();
+        /* if momentary switch turning on, start timer */
+        if (value && (ontime[6] > 0)) {
+            offtime[6] = millis() + ontime[6];
+        }
+    });
+
+    /* Attach Button Callback */
+    Relay_8.attachCallback([&](bool value) {
+        /* Print our new button value received from dashboard */
+        Serial.println("Relay_8 Triggered: " + String((value) ? "true" : "false"));
+        digitalWrite(RELAY_PIN_8, value);
+        /* Make sure we update our button's value and send update to dashboard */
+        Relay_8.update(value);
+        dashboard.sendUpdates();
+        /* if momentary switch turning on, start timer */
+        if (value && (ontime[7] > 0)) {
+            offtime[7] = millis() + ontime[7];
+        }
+    });
+
+#endif
 
     /* Start AsyncWebServer */
     server.begin();
@@ -180,7 +287,7 @@ void loop()
     wifiStatus = WiFi.status();
 
     /* turn off momentary switches */
-    for (i=0; i<4; i++) {
+    for (i=0; i<NUMBER_OF_RELAYS; i++) {
         if ((offtime[i] > 0) && (now > offtime[i])) {
             offtime[i] = 0;
             needUpdate = true;
@@ -201,6 +308,24 @@ void loop()
                     digitalWrite(RELAY_PIN_4, false);
                     Relay_4.update(false);
                     break;
+#if defined(RELAY8)
+                case 4:
+                    digitalWrite(RELAY_PIN_5, false);
+                    Relay_5.update(false);
+                    break;
+                case 5:
+                    digitalWrite(RELAY_PIN_6, false);
+                    Relay_6.update(false);
+                    break;
+                case 6:
+                    digitalWrite(RELAY_PIN_7, false);
+                    Relay_7.update(false);
+                    break;
+                case 7:
+                    digitalWrite(RELAY_PIN_8, false);
+                    Relay_8.update(false);
+                    break;
+#endif
             }
             if (needUpdate) {
                 dashboard.sendUpdates();
